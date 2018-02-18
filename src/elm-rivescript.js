@@ -1,33 +1,24 @@
-import RiveScript from 'rivescript';
+// import RiveScript from 'rivescript';
 
 var bot = new RiveScript()
-  , node = document.getElementById('my-app')
-  , app = Elm.MyApp.embed(node);
+  , mnt = document.getElementById('my-app')
+  , app = Elm.Example.embed(mnt);
 
-// All file loading operations are asynchronous, so you need handlers
-// to catch when they've finished. If you use loadDirectory (or loadFile
-// with multiple file names), the success function is called only when ALL
-// the files have finished loading.
-function loading_done (batch_num) {
-  console.log("Batch #" + batch_num + " has finished loading!");
-
-  // Now the replies must be sorted!
-  bot.sortReplies();
-}
-
-// It's good to catch errors too!
-function loading_error (error) {
-  console.log("Error when loading files: " + error);
-}
-
-// Load a list of files all at once (the best alternative to loadDirectory
-// for the web!)
+// Load the bot brain
 bot.loadFile([
   // Insert relative .rive file paths here
-], loading_done, loading_error);
+], function (batch_num) {
+  console.log("Bot brain #" + batch_num + " has finished loading");
+  // Now replies must be sorted; this is a rivescript-js requirement
+  bot.sortReplies();
+}, function (error) {
+  console.log("Error when loading bot brain: " + error);
+});
 
-
-app.ports.reply.subscribe(function(data) {
-  var reply = bot.request("local-user", data);
+// Wire up the Elm app
+app.ports.request.subscribe(function(data) {
+  console.log("We're asking the bot brain: (" + data[0] + ") " + data[1]);
+  var reply = bot.reply(data[0], data[1]);
+  console.log("  and the bot brain replied (" + data[0] + ") " + reply);
   app.ports.respond.send(reply);
 });
