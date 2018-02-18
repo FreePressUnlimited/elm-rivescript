@@ -1,7 +1,7 @@
 port module Bot exposing
   ( Bot, bot
   , name
-  , reply, receive)
+  , reply, listen)
 
 {-| An Elm RiveScript library. This is just an Elm interface built on top of the [rivescript-js](https://github.com/aichaos/rivescript-js) public API.
 
@@ -17,7 +17,7 @@ port module Bot exposing
 
 @docs reply
 
-@docs receive
+@docs listen
 -}
 
 
@@ -83,7 +83,7 @@ port respond : (String -> a) -> Sub a
 
 {-| Subscribe to replies from your bot
 -}
-receive : ( (String, Bot) -> a ) -> Bot -> Sub a
-receive msg bot =
+listen : ( (String, Bot) -> a ) -> Bot -> Sub a
+listen msg bot =
   -- Split incoming message based on directions (see Dexter docs at http://docs.rundexter.com/writing/bot/directions/); spawn lightweight processes and batch subscriptions as appropriate. I want to support the <send>, <delay> and <noreply> directions. The <get>, <set> and <star> directions seem to be supported by RiveScript out of the box.
   Sub.map (\tuple -> msg <| tuple) (respond (\str -> ( str, bot ) ) )
