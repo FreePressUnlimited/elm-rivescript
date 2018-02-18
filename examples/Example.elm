@@ -23,7 +23,7 @@ main =
       { init = update Submit model
       , view = view
       , update = update
-      , subscriptions = (\model -> Bot.listen Listen model.bot)
+      , subscriptions = (\model -> Bot.listen Listen)
       }
 
 
@@ -39,7 +39,7 @@ type alias Model =
 
 
 type Msg
-  = Listen ( String, Bot.Bot )
+  = Listen ( Result String ( String, Bot.Bot ) )
   | Input String
   | Submit
   | Enter Int
@@ -48,7 +48,9 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
-    Listen ( reply, bot ) ->
+    Listen ( Err _ ) ->
+      model ! [ Cmd.none ]
+    Listen ( Ok ( reply, bot ) ) ->
       -- Update bot
       { model | history = (Remote, reply) :: model.history, bot = bot } ! [ Cmd.none ]
     Input input ->

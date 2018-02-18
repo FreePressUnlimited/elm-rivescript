@@ -1,5 +1,5 @@
 port module Bot exposing
-  ( Bot, bot
+  ( Bot, Farm, bot
   , name
   , reply, listen)
 
@@ -8,6 +8,8 @@ port module Bot exposing
 # State
 
 @docs Bot
+
+@docs Farm
 
 @docs bot
 
@@ -21,6 +23,7 @@ port module Bot exposing
 -}
 
 
+import Array exposing (Array)
 import Process
 import Task
 
@@ -32,6 +35,12 @@ type Bot =
     { uid   : String
     , pid   : Maybe Process.Id
     }
+
+
+{-| A `Farm` is a collection of zero or more `Bot`. Bots come in farms, not in armies. I'm no believer of a bot apocalyse.
+-}
+type alias Farm = List Bot
+
 
 
 {-| Create a new bot.
@@ -78,12 +87,19 @@ reply str (Bot bot) =
     Bot { bot | pid = Nothing } ! [ cmd, request [ bot.uid, str ] ]
 
 
-port respond : (String -> a) -> Sub a
+port respond : (Array String -> a) -> Sub a
 
 
-{-| Subscribe to replies from your bot. There's currently no facility to tell replies from one bot apart from the replies from another bot. One can, by definition of `Listen` relying on a single port, only receive replies from all bots or none.
+{-| Subscribe to replies from your bot.
 -}
-listen : ( (String, Bot) -> a ) -> Bot -> Sub a
-listen msg bot =
+listen : ( Result String (String, Bot) -> a ) -> Sub a
+listen msg =
   -- Split incoming message based on directions (see Dexter docs at http://docs.rundexter.com/writing/bot/directions/); spawn lightweight processes and batch subscriptions as appropriate. I want to support the <send>, <delay> and <noreply> directions. The <get>, <set> and <star> directions seem to be supported by RiveScript out of the box.
-  Sub.map (\tuple -> msg <| tuple) (respond (\str -> ( str, bot ) ) )
+  Sub.map
+    (\(name, reply) ->
+      case (Maybe.map2 (\n r -> (r, bot n) ) name reply) of
+        Nothing ->
+          msg <| Err "Bad javascript input (bot name or reply)"
+        Just tuple ->
+          msg <| Ok tuple
+    ) ( respond (\data -> ( Array.get 0 data, Array.get 1 data) ) )
