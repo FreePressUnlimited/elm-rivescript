@@ -13,12 +13,18 @@ import Bot
 -}
 main : Program Never Model Msg
 main =
-  Html.program
-    { init = { history = [], draft = "", bot = Bot.bot "my-bot" } ! [ Cmd.none ]
-    , view = view
-    , update = update
-    , subscriptions = (\model -> Bot.listen Listen model.bot)
-    }
+  let
+    model =
+      { history = []
+      , draft = "Hello, Bot!"
+      , bot = Bot.bot "my-bot" }
+  in
+    Html.program
+      { init = update Submit model
+      , view = view
+      , update = update
+      , subscriptions = (\model -> Bot.listen Listen model.bot)
+      }
 
 
 -- MODEL
