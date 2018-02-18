@@ -1,6 +1,6 @@
 port module Bot exposing
-  ( Bot, bot
-  , name
+  ( Bot, Farm, bot
+  , update, name
   , reply, listen)
 
 {-| An Elm RiveScript library. This is just an Elm interface built on top of the [rivescript-js](https://github.com/aichaos/rivescript-js) public API.
@@ -9,7 +9,11 @@ port module Bot exposing
 
 @docs Bot
 
+@docs Farm
+
 @docs bot
+
+@docs update
 
 @docs name
 
@@ -34,6 +38,12 @@ type Bot =
     }
 
 
+{-| A `Farm` is a collection of zero or more `Bot`. Bots come in farms, not in armies. I'm no believer of a bot apocalyse.
+-}
+type alias Farm = List Bot
+
+
+
 {-| Create a new bot.
 -}
 bot : String -> Bot
@@ -42,6 +52,13 @@ bot name =
     { uid = name
     , pid = Nothing
     }
+
+
+{-| Update `Bot` in `Farm`
+-}
+update : Bot -> Farm -> Farm
+update bot farm =
+  farm
 
 
 {-| Query the name of your bot.
