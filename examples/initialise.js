@@ -20,10 +20,10 @@ bot.loadFile([
     console.log("We're asking the bot brain: (" + data[0] + ") " + data[1]);
     var reply = bot.reply(data[0], data[1]);
     console.log("  and the bot brain replied (" + data[0] + ") " + reply);
-    app.ports.respond.send(reply);
+    app.ports.respond.send([data[0], reply]);
   });
 
 }, function (error) {
-  
+
   console.log("Error when loading bot brain: " + error);
 });

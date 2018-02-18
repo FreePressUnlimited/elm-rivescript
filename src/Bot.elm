@@ -1,6 +1,6 @@
 port module Bot exposing
   ( Bot, Farm, bot
-  , update, name
+  , name
   , reply, listen)
 
 {-| An Elm RiveScript library. This is just an Elm interface built on top of the [rivescript-js](https://github.com/aichaos/rivescript-js) public API.
@@ -13,8 +13,6 @@ port module Bot exposing
 
 @docs bot
 
-@docs update
-
 @docs name
 
 # Conversation
@@ -25,6 +23,7 @@ port module Bot exposing
 -}
 
 
+import Array exposing (Array)
 import Process
 import Task
 
@@ -54,13 +53,6 @@ bot name =
     }
 
 
-{-| Update `Bot` in `Farm`
--}
-update : Bot -> Farm -> Farm
-update bot farm =
-  farm
-
-
 {-| Query the name of your bot.
 -}
 name : Bot -> String
@@ -73,6 +65,16 @@ uid (Bot { uid }) = uid
 
 pid : Bot -> Maybe Process.Id
 pid (Bot { pid }) = pid
+
+
+update : Bot -> Farm -> Farm -> Farm
+update bot acc farm =
+  case List.head farm of
+    Nothing ->
+      bot :: acc
+    Just i -> case uid i == uid bot of
+      True -> (bot :: acc) ++ (Maybe.withDefault [] <| List.tail farm)
+      False -> update bot (i :: acc) (Maybe.withDefault [] <| List.tail farm)
 
 
 port request : List String -> Cmd a
@@ -95,12 +97,24 @@ reply str (Bot bot) =
     Bot { bot | pid = Nothing } ! [ cmd, request [ bot.uid, str ] ]
 
 
-port respond : (String -> a) -> Sub a
+port respond : (Array String -> a) -> Sub a
 
 
-{-| Subscribe to replies from your bot. There's currently no facility to tell replies from one bot apart from the replies from another bot. One can, by definition of `Listen` relying on a single port, only receive replies from all bots or none.
+{-| Subscribe to replies from your bot.
 -}
-listen : ( (String, Bot) -> a ) -> Bot -> Sub a
-listen msg bot =
+listen : ( Result String (String, Bot) -> a ) -> Sub a
+listen msg =
   -- Split incoming message based on directions (see Dexter docs at http://docs.rundexter.com/writing/bot/directions/); spawn lightweight processes and batch subscriptions as appropriate. I want to support the <send>, <delay> and <noreply> directions. The <get>, <set> and <star> directions seem to be supported by RiveScript out of the box.
-  Sub.map (\tuple -> msg <| tuple) (respond (\str -> ( str, bot ) ) )
+  Sub.map
+    (\(name, reply) ->
+      case (Maybe.map2 (\n r -> (r, bot n) ) name reply) of
+        Nothing ->
+          msg <| Err "Bad javascript input (bot name or reply)"
+        Just tuple ->
+          msg <| Ok tuple
+    ) ( respond (\data -> ( Array.get 0 data, Array.get 1 data) ) )
+
+
+-- `monitor` is a special case `listen`, which takes a farm as input. `monitor` calls into `update` (which puts *or* sets bots in a farm) when a bot with a given name replies. The library makes no guarantees about the existence of a bot or the consistency of the farm.
+-- monitor : ( Result String (String, Bot, Farm)  -> a ) -> Farm -> Sub a
+-- monitor msg farm =
