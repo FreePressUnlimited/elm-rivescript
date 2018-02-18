@@ -67,16 +67,6 @@ pid : Bot -> Maybe Process.Id
 pid (Bot { pid }) = pid
 
 
-update : Bot -> Farm -> Farm -> Farm
-update bot acc farm =
-  case List.head farm of
-    Nothing ->
-      bot :: acc
-    Just i -> case uid i == uid bot of
-      True -> (bot :: acc) ++ (Maybe.withDefault [] <| List.tail farm)
-      False -> update bot (i :: acc) (Maybe.withDefault [] <| List.tail farm)
-
-
 port request : List String -> Cmd a
 
 
@@ -113,8 +103,3 @@ listen msg =
         Just tuple ->
           msg <| Ok tuple
     ) ( respond (\data -> ( Array.get 0 data, Array.get 1 data) ) )
-
-
--- `monitor` is a special case `listen`, which takes a farm as input. `monitor` calls into `update` (which puts *or* sets bots in a farm) when a bot with a given name replies. The library makes no guarantees about the existence of a bot or the consistency of the farm.
--- monitor : ( Result String (String, Bot, Farm)  -> a ) -> Farm -> Sub a
--- monitor msg farm =
