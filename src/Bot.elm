@@ -58,7 +58,7 @@ pid : Bot -> Maybe Process.Id
 pid (Bot { pid }) = pid
 
 
-port request : String -> Cmd a
+port request : List String -> Cmd a
 
 
 {-| Request replies from your bot
@@ -75,13 +75,13 @@ reply str (Bot bot) =
       Nothing ->
         Cmd.none
   in
-    Bot { bot | pid = Nothing } ! [cmd, request str]
+    Bot { bot | pid = Nothing } ! [ cmd, request [ bot.uid, str ] ]
 
 
 port respond : (String -> a) -> Sub a
 
 
-{-| Subscribe to replies from your bot
+{-| Subscribe to replies from your bot. There's currently no facility to tell replies from one bot apart from the replies from another bot. One can, by definition of `Listen` relying on a single port, only receive replies from all bots or none.
 -}
 listen : ( (String, Bot) -> a ) -> Bot -> Sub a
 listen msg bot =
