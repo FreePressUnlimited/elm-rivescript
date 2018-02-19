@@ -1,8 +1,10 @@
-module Example exposing (main)
+port module Example exposing (main)
 
 import Html
 import Html.Attributes as Attrs
 import Html.Events as Events
+
+import Array
 
 import Json.Decode as Json
 
@@ -11,6 +13,12 @@ import Bot
 
 {-| PROGRAM
 -}
+port to : List String -> Cmd msg
+
+
+port from : (Array.Array String -> msg) -> Sub msg
+
+
 main : Program Never Model Msg
 main =
   let
@@ -23,7 +31,7 @@ main =
       { init = update Submit model
       , view = view
       , update = update
-      , subscriptions = (\model -> Bot.listen Listen)
+      , subscriptions = (\model -> Bot.listen from Listen )
       }
 
 
@@ -57,7 +65,7 @@ update msg model =
       { model | draft = input } ! [ Cmd.none ]
     Submit ->
       let
-        ( bot, cmd ) = Bot.reply model.draft model.bot
+        ( bot, cmd ) = Bot.reply to model.draft model.bot
       in
         { model | history = (User, model.draft) :: model.history, draft = "", bot = bot } ! [ cmd ]
     Enter key ->
