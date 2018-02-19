@@ -1,11 +1,11 @@
-port module Bot exposing
+module Bot exposing
   ( Bot, Farm, bot
   , name
   , reply, listen)
 
 {-| **An Elm RiveScript library** This library provides an Elm interface for RiveScript built on top of the [rivescript-js](https://github.com/aichaos/rivescript-js) public API.
 
-  The library depends on [ports](https://guide.elm-lang.org/interop/javascript.html#ports) for interop with the rivescript-js library. See [elm-rivescript.js](https://github.com/FreePressUnlimited/elm-rivescript/blob/master/src/elm-rivescript.js) for a template and instructions on how to wire up these ports on the javascript side.
+  The library depends on [ports](https://guide.elm-lang.org/interop/javascript.html#ports) for interop with the rivescript-js library. See the [readme](http://package.elm-lang.org/packages/publeaks/elm-rivescript/latest#Javascript-interop) for instructions on how to wire up these ports in your Elm app, and [elm-rivescript.js](https://github.com/Publeaks/elm-rivescript/blob/master/src/elm-rivescript.js) for a template and instructions on how to wire up these ports on the javascript side.
 
   Use [`bot name`](#bot) to create a named bot of type [`Bot`](#Bot). Receive replies from your bot by subscribing to [`listen msg`](#listen). You can subsequenty query the bot for a reply with [`reply message bot`](#reply).
 
@@ -88,17 +88,19 @@ pid : Bot -> Maybe Process.Id
 pid (Bot { pid }) = pid
 
 
-port request : List String -> Cmd a
-
 
 {-| Request replies from your bot.
 
   You must update your application state to replace your bot with the bot returned to you. You must also pass the command returned to you to the Elm runtime for your query to be submitted to the RiveScript interpreter.
 
-    reply "Hello, Bot!" (bot "Marvin") == ( Bot, Cmd msg )
+    reply to "Hello, Bot!" (bot "Marvin") == ( Bot, Cmd msg )
+
+  Where `to` is an outgoing port of type:
+
+    port to : List String -> Cmd msg
 -}
-reply : String -> Bot -> ( Bot, Cmd a )
-reply str (Bot bot) =
+reply : ( List String -> Cmd a ) -> String -> Bot -> ( Bot, Cmd a )
+reply port_ str (Bot bot) =
   let
     -- Kill any running lightweight processes Bot bot.pid
     cmd = case bot.pid of
@@ -109,10 +111,7 @@ reply str (Bot bot) =
       Nothing ->
         Cmd.none
   in
-    Bot { bot | pid = Nothing } ! [ cmd, request [ bot.uid, str ] ]
-
-
-port respond : (Array String -> a) -> Sub a
+    Bot { bot | pid = Nothing } ! [ cmd, port_ [ bot.uid, str ] ]
 
 
 {-| Subscribe to replies from your bot.
@@ -121,10 +120,14 @@ port respond : (Array String -> a) -> Sub a
 
   Returns `Err "Bad javascript input (bot name or reply)"` if the RiveScript interpreter either returns no bot name or returns no reply. If elm-rivescript is wired up correctly on the javascript side this **should** never occur.
 
-    listen (\Result error (reply, bot) -> msg) == Sub msg
+    listen from (\Result error (reply, bot) -> msg) == Sub msg
+
+  Where `from` is an incoming port of type:
+
+    port from : (Array.Array String -> msg) -> Sub msg
 -}
-listen : ( Result String (String, Bot) -> a ) -> Sub a
-listen msg =
+listen : ( ( Array String -> ( Maybe String, Maybe String ) ) -> Sub ( Maybe String, Maybe String ) ) ->  ( Result String ( String, Bot ) -> a ) -> Sub a
+listen port_ msg =
   -- Split incoming message based on directions (see Dexter docs at http://docs.rundexter.com/writing/bot/directions/); spawn lightweight processes and batch subscriptions as appropriate. I want to support the <send>, <delay> and <noreply> directions. The <get>, <set> and <star> directions seem to be supported by RiveScript out of the box.
   Sub.map
     (\(name, reply) ->
@@ -133,4 +136,4 @@ listen msg =
           msg <| Err "Bad javascript input (bot name or reply)"
         Just tuple ->
           msg <| Ok tuple
-    ) ( respond (\data -> ( Array.get 0 data, Array.get 1 data) ) )
+    ) ( port_ (\data -> (Array.get 0 data, Array.get 1 data) ) )
