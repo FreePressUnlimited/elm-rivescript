@@ -1,3 +1,4 @@
+// Instantiate RiveScript interpreter and get my Elm mount point from the DOM
 var bot = new RiveScript()
   , mnt = document.getElementById('my-app');
 

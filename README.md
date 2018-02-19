@@ -1,6 +1,20 @@
 # elm-rivescript
 
-An Elm RiveScript library. This is just an Elm interface built on top of the [rivescript-js](https://github.com/aichaos/rivescript-js) public API.
+**An Elm RiveScript library** This library provides an Elm interface for RiveScript built on top of the [rivescript-js](https://github.com/aichaos/rivescript-js) public API.
+
+## Installation instructions
+
+To do
+
+## Getting started
+
+To do
+
+## Documentation
+
+* The main `src/Bot.elm` source file is well documented. See the documentation at [Elm Packages](http://package.elm-lang.org/packages/publeaks/elm-rivescript/latest).
+* Also see the comments inline to `src/elm-rivescript.js` on [Github](https://github.com/Publeaks/elm-rivescript/blob/master/src/elm-rivescript.js).
+* The repo contains a worked example at `examples/example.html`.
 
 ## License
 
