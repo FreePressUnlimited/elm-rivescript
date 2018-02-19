@@ -1,7 +1,7 @@
 {
     "version": "0.1.0",
     "summary": "Interface for the rivescript-js RiveScript interpreter",
-    "repository": "https://github.com/user/project.git",
+    "repository": "https://github.com/publeaks/elm-rivescript.git",
     "license": "MIT",
     "source-directories": [
         "src"

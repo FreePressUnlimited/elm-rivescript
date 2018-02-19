@@ -3,9 +3,17 @@ port module Bot exposing
   , name
   , reply, listen)
 
-{-| An Elm RiveScript library. This is just an Elm interface built on top of the [rivescript-js](https://github.com/aichaos/rivescript-js) public API.
+{-| **An Elm RiveScript library** This library provides an Elm interface for RiveScript built on top of the [rivescript-js](https://github.com/aichaos/rivescript-js) public API.
+
+  The library depends on [ports](https://guide.elm-lang.org/interop/javascript.html#ports) for interop with the rivescript-js library. See [elm-rivescript.js](https://github.com/FreePressUnlimited/elm-rivescript/blob/master/src/elm-rivescript.js) for a template and instructions on how to wire up these ports on the javascript side.
+
+  Use [`bot name`](#bot) to create a named bot of type [`Bot`](#Bot). Receive replies from your bot by subscribing to [`listen msg`](#listen). You can subsequenty query the bot for a reply with [`reply message bot`](#reply).
+
+  The library supports multiple bots. See the documentation of [`Farm`](#Farm) to learn more about managing conversation state when there's more than one bot in your bot farm.
 
 # State
+
+Create bots and manage the state of those bots.
 
 @docs Bot
 
@@ -16,6 +24,8 @@ port module Bot exposing
 @docs name
 
 # Conversation
+
+Query bots and listen to receive replies.
 
 @docs reply
 
@@ -28,7 +38,7 @@ import Process
 import Task
 
 
-{-| A record of type `Bot` represents a bot and encapsulsates the internal state of that bot. Use [`bot : String -> Bot`](#bot) to create a new bot.
+{-| A record of type `Bot` encapsulsates the internal state of a bot. Use [`bot : String -> Bot`](#bot) to create a new bot.
 -}
 type Bot =
   Bot
@@ -37,16 +47,25 @@ type Bot =
     }
 
 
-{-| A `Farm` is a collection of zero or more `Bot`. Bots come in farms, not in armies. I'm no believer of a bot apocalyse.
+{-| A `Farm` is a collection of zero or more `Bot`. Bots come in farms, not in armies. I'm no believer of the bot apocalyse.
+
+  The `Farm` type is provided for convenience. The library has no facilities for managing the state of a farm of bots. The [`List`](http://package.elm-lang.org/packages/elm-lang/core/latest/List) module provides all the functionality you need to manage a bot farm.
+
+  Bots are identified by name; the `name` field is used as a unique identifier. **In order for a farm to remain internally consistent, you must avoid duplicate names.**
+
+  Both [`reply`](#reply) and [`listen`](#listen) return a bot as part of the return value. This bot is always newly created internally with [`bot`](#bot). The name of this bot corresponds to the name of the bot that was queried ([`reply`](#reply)), or that submits a reply ([`listen`](#listen)). Use this bot to update (*insert-or-replace*) your bot farm.
 -}
 type alias Farm = List Bot
 
 
+{-| Create a new named bot. See also [`name`](#name).
 
-{-| Create a new bot.
+    bot "Marvin" == Bot
+    name (bot "Marvin") == "Marvin"
 -}
 bot : String -> Bot
 bot name =
+  -- Check if there's a restriction on the capitalization of names; do only lower case letters pass through ports :-/
   Bot
     { uid = name
     , pid = Nothing
@@ -54,6 +73,8 @@ bot name =
 
 
 {-| Query the name of your bot.
+
+    name (bot "Marvin") == "Marvin"
 -}
 name : Bot -> String
 name = uid
@@ -70,7 +91,11 @@ pid (Bot { pid }) = pid
 port request : List String -> Cmd a
 
 
-{-| Request replies from your bot
+{-| Request replies from your bot.
+
+  You must update your application state to replace your bot with the bot returned to you. You must also pass the command returned to you to the Elm runtime for your query to be submitted to the RiveScript interpreter.
+
+    reply "Hello, Bot!" (bot "Marvin") == ( Bot, Cmd msg )
 -}
 reply : String -> Bot -> ( Bot, Cmd a )
 reply str (Bot bot) =
@@ -91,6 +116,12 @@ port respond : (Array String -> a) -> Sub a
 
 
 {-| Subscribe to replies from your bot.
+
+  Returns `Ok ( reply, bot )` when a reply arrives from the RiveScript interpreter. You must update your application state to replace your bot with the bot returned to you.
+
+  Returns `Err "Bad javascript input (bot name or reply)"` if the RiveScript interpreter either returns no bot name or returns no reply. If elm-rivescript is wired up correctly on the javascript side this **should** never occur.
+
+    listen (\Result error (reply, bot) -> msg) == Sub msg
 -}
 listen : ( Result String (String, Bot) -> a ) -> Sub a
 listen msg =

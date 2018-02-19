@@ -17,7 +17,7 @@ main =
     model =
       { history = []
       , draft = "Hello, Bot!"
-      , bot = Bot.bot "my-bot" }
+      , bot = Bot.bot "Marvin" }
   in
     Html.program
       { init = update Submit model
