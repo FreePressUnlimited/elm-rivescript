@@ -5,7 +5,7 @@ module Bot exposing
 
 {-| **An Elm RiveScript library** This library provides an Elm interface for RiveScript built on top of the [rivescript-js](https://github.com/aichaos/rivescript-js) public API.
 
-  The library depends on [ports](https://guide.elm-lang.org/interop/javascript.html#ports) for interop with the rivescript-js library. See the [readme](http://package.elm-lang.org/packages/publeaks/elm-rivescript/latest#Javascript-interop) for instructions on how to wire up these ports in your Elm app, and [elm-rivescript.js](https://github.com/Publeaks/elm-rivescript/blob/master/src/elm-rivescript.js) for a template and instructions on how to wire up these ports on the javascript side.
+  The library depends on [ports](https://guide.elm-lang.org/interop/javascript.html#ports) for interop with the rivescript-js library. See the [readme](http://package.elm-lang.org/packages/publeaks/elm-rivescript/latest#javascript-interop) for instructions on how to wire up these ports in your Elm app, and [elm-rivescript.js](https://github.com/Publeaks/elm-rivescript/blob/master/src/elm-rivescript.js) for a template and instructions on how to wire up these ports on the javascript side.
 
   Use [`bot name`](#bot) to create a named bot of type [`Bot`](#Bot). Receive replies from your bot by subscribing to [`listen msg`](#listen). You can subsequenty query the bot for a reply with [`reply message bot`](#reply).
 
