@@ -78,7 +78,6 @@ type alias Farm = List Bot
 -}
 bot : String -> Bot
 bot name =
-  -- Check if there's a restriction on the capitalization of names; do only lower case letters pass through ports :-/
   Bot
     { uid = name
     , pid = Nothing
@@ -121,11 +120,7 @@ type alias To a = List String -> Cmd a
 
     port to : List String -> Cmd msg
 -}
-reply
-  : String
-  -> To a
-  -> Bot
-  -> Request a
+reply : String -> To a -> Bot -> Request a
 reply str port_ (Bot bot) =
   let
     -- Kill any running lightweight processes Bot bot.pid
@@ -142,12 +137,18 @@ reply str port_ (Bot bot) =
 
 {-| type alias Response
 -}
-type alias Response a = (String, Bot, Cmd a)
+type alias Response a =
+  { reply : String
+  , bot : Bot
+  , cmd : Cmd a
+  }
 
 
 {-| type alias With
 -}
-type alias With a = ( Array.Array String -> a ) -> Sub a
+type alias With a
+  -- Using List instead of Array will be more conventional while Array will likely be more performant.
+  = ( Array.Array String -> a ) -> Sub a
 
 
 {-| Subscribe to replies from your bot.
@@ -167,18 +168,20 @@ listen
   ->  ( Result String (Response a) -> a )
   -> Sub a
 listen port_ msg =
-  -- Split incoming message based on directions (see Dexter docs at http://docs.rundexter.com/writing/bot/directions/); spawn lightweight processes and batch subscriptions as appropriate. I want to support the <send>, <delay> and <noreply> directions. The <get>, <set> and <star> directions seem to be supported by RiveScript out of the box.
-  -- Note: 3-tuples are not recommended, see http://package.elm-lang.org/packages/elm-lang/core/latest/Tuple
-  Sub.map
-    (\(name, reply) ->
-      case (Maybe.map2 (parse msg) name reply) of
-        Nothing ->
-          msg <| Err "Bad javascript input (bot name or reply)"
-        Just tuple ->
-          msg <| Ok tuple
-    ) ( port_ (\data -> (Array.get 0 data, Array.get 1 data) ) )
+  let
+    parser =
+      (\(name, reply) ->
+        case (Maybe.map2 (parse msg) name reply) of
+          Nothing ->
+            msg <| Err "Bad javascript input (bot name or reply)"
+          Just response ->
+            msg <| Ok response
+      )
+  in
+    Sub.map parser <| port_ (\data -> (Array.get 0 data, Array.get 1 data) )
 
 
+-- Split incoming message based on directions (see Dexter docs at http://docs.rundexter.com/writing/bot/directions/); spawn lightweight processes and batch subscriptions as appropriate. I want to support the <send>, <delay> and <noreply> directions. The <get>, <set> and <star> directions seem to be supported by RiveScript out of the box.
 parse
   : ( Result String (Response a) -> a )
   -> String
@@ -187,12 +190,16 @@ parse
 parse msg name str =
   let
     list = Regex.split (AtMost 1) (regex "<delay>") str
+    -- Is this the correct default or should I fail if "" == reply?
     reply = Maybe.withDefault "" (List.head list)
     cmd = case (List.drop 1 list |> List.head) of
       Just delayed ->
-        Process.sleep (5 * Time.second)
-          |> Task.perform (\_ -> msg <| Ok (parse msg name delayed))
+        Process.sleep (2 * Time.second)
+          |> Task.perform (\_ -> msg <| Ok <| parse msg name delayed)
       Nothing ->
         Cmd.none
   in
-    (reply, bot name, cmd)
+    { reply = reply
+    , bot = bot name
+    , cmd = cmd
+    }
