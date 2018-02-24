@@ -35,7 +35,9 @@ Query bots and listen to receive replies.
 
 import Array exposing (Array)
 import Process
+import Regex exposing (..)
 import Task
+import Time
 
 
 {-| A record of type `Bot` encapsulsates the internal state of a bot. Use [`bot : String -> Bot`](#bot) to create a new bot.
@@ -93,14 +95,18 @@ pid (Bot { pid }) = pid
 
   You must update your application state to replace your bot with the bot returned to you. You must also pass the command returned to you to the Elm runtime for your query to be submitted to the RiveScript interpreter.
 
-    reply to "Hello, Bot!" (bot "Marvin") == ( Bot, Cmd msg )
+    reply "Hello, Bot!" to (bot "Marvin") == ( Bot, Cmd msg )
 
   Where `to` is an outgoing port of type:
 
     port to : List String -> Cmd msg
 -}
-reply : ( List String -> Cmd a ) -> String -> Bot -> ( Bot, Cmd a )
-reply port_ str (Bot bot) =
+reply
+  : String
+  -> ( List String -> Cmd a )
+  -> Bot
+  -> (Bot, Cmd a)
+reply str port_ (Bot bot) =
   let
     -- Kill any running lightweight processes Bot bot.pid
     cmd = case bot.pid of
@@ -120,20 +126,43 @@ reply port_ str (Bot bot) =
 
   Returns `Err "Bad javascript input (bot name or reply)"` if the RiveScript interpreter either returns no bot name or returns no reply. If elm-rivescript is wired up correctly on the javascript side this **should** never occur.
 
-    listen from (\Result error (reply, bot) -> msg) == Sub msg
+    listen with (\Result error (reply, bot, cmd) -> msg) == Sub msg
 
-  Where `from` is an incoming port of type:
+  Where `with` is an incoming port of type:
 
-    port from : (Array.Array String -> msg) -> Sub msg
+    port with : (Array.Array String -> msg) -> Sub msg
 -}
-listen : ( ( Array String -> ( Maybe String, Maybe String ) ) -> Sub ( Maybe String, Maybe String ) ) ->  ( Result String ( String, Bot ) -> a ) -> Sub a
+listen
+  : ( ( Array String -> ( Maybe String, Maybe String ) ) -> Sub ( Maybe String, Maybe String ) )
+  ->  ( Result String ( String, Bot, Cmd a ) -> a )
+  -> Sub a
 listen port_ msg =
   -- Split incoming message based on directions (see Dexter docs at http://docs.rundexter.com/writing/bot/directions/); spawn lightweight processes and batch subscriptions as appropriate. I want to support the <send>, <delay> and <noreply> directions. The <get>, <set> and <star> directions seem to be supported by RiveScript out of the box.
+  -- Note: 3-tuples are not recommended, see http://package.elm-lang.org/packages/elm-lang/core/latest/Tuple
   Sub.map
     (\(name, reply) ->
-      case (Maybe.map2 (\n r -> (r, bot n) ) name reply) of
+      case (Maybe.map2 (parse msg) name reply) of
         Nothing ->
           msg <| Err "Bad javascript input (bot name or reply)"
         Just tuple ->
           msg <| Ok tuple
     ) ( port_ (\data -> (Array.get 0 data, Array.get 1 data) ) )
+
+
+parse
+  : ( Result String ( String, Bot, Cmd a ) -> a )
+  -> String
+  -> String
+  -> ( String, Bot, Cmd a )
+parse msg name str =
+  let
+    list = Regex.split (AtMost 1) (regex "<delay>") str
+    reply = Maybe.withDefault "" (List.head list)
+    cmd = case (List.drop 1 list |> List.head) of
+      Just delayed ->
+        Process.sleep (5 * Time.second)
+          |> Task.perform (\_ -> msg <| Ok (parse msg name delayed))
+      Nothing ->
+        Cmd.none
+  in
+    (reply, bot name, cmd)

@@ -16,7 +16,7 @@ import Bot
 port to : List String -> Cmd msg
 
 
-port from : (Array.Array String -> msg) -> Sub msg
+port with : (Array.Array String -> msg) -> Sub msg
 
 
 main : Program Never Model Msg
@@ -31,7 +31,7 @@ main =
       { init = update Submit model
       , view = view
       , update = update
-      , subscriptions = (\model -> Bot.listen from Listen )
+      , subscriptions = (\model -> Bot.listen with Listen )
       }
 
 
@@ -47,7 +47,7 @@ type alias Model =
 
 
 type Msg
-  = Listen ( Result String ( String, Bot.Bot ) )
+  = Listen ( Result String ( String, Bot.Bot, Cmd Msg ) )
   | Input String
   | Submit
   | Enter Int
@@ -58,14 +58,14 @@ update msg model =
   case msg of
     Listen ( Err _ ) ->
       model ! [ Cmd.none ]
-    Listen ( Ok ( reply, bot ) ) ->
+    Listen ( Ok ( reply, bot, cmd ) ) ->
       -- Update bot
-      { model | history = (Remote, reply) :: model.history, bot = bot } ! [ Cmd.none ]
+      { model | history = (Remote, reply) :: model.history, bot = bot } ! [ cmd ]
     Input input ->
       { model | draft = input } ! [ Cmd.none ]
     Submit ->
       let
-        ( bot, cmd ) = Bot.reply to model.draft model.bot
+        ( bot, cmd ) = Bot.reply model.draft to model.bot
       in
         { model | history = (User, model.draft) :: model.history, draft = "", bot = bot } ! [ cmd ]
     Enter key ->
