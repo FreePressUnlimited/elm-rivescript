@@ -13,10 +13,10 @@ import Bot
 
 {-| PROGRAM
 -}
-port to : List String -> Cmd msg
+port to : Bot.To msg
 
 
-port with : (Array.Array String -> msg) -> Sub msg
+port with : Bot.With msg
 
 
 main : Program Never Model Msg
@@ -47,7 +47,7 @@ type alias Model =
 
 
 type Msg
-  = Listen ( Result String ( String, Bot.Bot, Cmd Msg ) )
+  = Listen ( Result String (Bot.Response Msg) )
   | Input String
   | Submit
   | Enter Int
@@ -65,7 +65,7 @@ update msg model =
       { model | draft = input } ! [ Cmd.none ]
     Submit ->
       let
-        ( bot, cmd ) = Bot.reply model.draft to model.bot
+        (bot, cmd) = Bot.reply model.draft to model.bot
       in
         { model | history = (User, model.draft) :: model.history, draft = "", bot = bot } ! [ cmd ]
     Enter key ->

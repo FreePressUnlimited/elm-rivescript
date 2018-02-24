@@ -1,7 +1,8 @@
 module Bot exposing
   ( Bot, Farm, bot
   , name
-  , reply, listen)
+  , Request, To, reply
+  , Response, With, listen)
 
 {-| **An Elm RiveScript library** This library provides an Elm interface for RiveScript built on top of the [rivescript-js](https://github.com/aichaos/rivescript-js) public API.
 
@@ -23,11 +24,21 @@ Create bots and manage the state of those bots.
 
 @docs name
 
-# Conversation
+# Requesting replies
 
-Query bots and listen to receive replies.
+Query bots for replies.
+
+@docs Request
+
+@docs To
 
 @docs reply
+
+# Subscribing to bot responses
+
+@docs Response
+
+@docs With
 
 @docs listen
 -}
@@ -90,6 +101,15 @@ pid : Bot -> Maybe Process.Id
 pid (Bot { pid }) = pid
 
 
+{-| type alias Request
+-}
+type alias Request a = (Bot, Cmd a)
+
+
+{-| type alias To
+-}
+type alias To a = List String -> Cmd a
+
 
 {-| Request replies from your bot.
 
@@ -103,9 +123,9 @@ pid (Bot { pid }) = pid
 -}
 reply
   : String
-  -> ( List String -> Cmd a )
+  -> To a
   -> Bot
-  -> (Bot, Cmd a)
+  -> Request a
 reply str port_ (Bot bot) =
   let
     -- Kill any running lightweight processes Bot bot.pid
@@ -118,6 +138,16 @@ reply str port_ (Bot bot) =
         Cmd.none
   in
     Bot { bot | pid = Nothing } ! [ cmd, port_ [ bot.uid, str ] ]
+
+
+{-| type alias Response
+-}
+type alias Response a = (String, Bot, Cmd a)
+
+
+{-| type alias With
+-}
+type alias With a = ( Array.Array String -> a ) -> Sub a
 
 
 {-| Subscribe to replies from your bot.
@@ -133,8 +163,8 @@ reply str port_ (Bot bot) =
     port with : (Array.Array String -> msg) -> Sub msg
 -}
 listen
-  : ( ( Array String -> ( Maybe String, Maybe String ) ) -> Sub ( Maybe String, Maybe String ) )
-  ->  ( Result String ( String, Bot, Cmd a ) -> a )
+  : ( With ( Maybe String, Maybe String ) )
+  ->  ( Result String (Response a) -> a )
   -> Sub a
 listen port_ msg =
   -- Split incoming message based on directions (see Dexter docs at http://docs.rundexter.com/writing/bot/directions/); spawn lightweight processes and batch subscriptions as appropriate. I want to support the <send>, <delay> and <noreply> directions. The <get>, <set> and <star> directions seem to be supported by RiveScript out of the box.
@@ -150,10 +180,10 @@ listen port_ msg =
 
 
 parse
-  : ( Result String ( String, Bot, Cmd a ) -> a )
+  : ( Result String (Response a) -> a )
   -> String
   -> String
-  -> ( String, Bot, Cmd a )
+  -> Response a
 parse msg name str =
   let
     list = Regex.split (AtMost 1) (regex "<delay>") str
