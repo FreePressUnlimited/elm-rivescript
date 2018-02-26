@@ -138,10 +138,7 @@ reply str port_ (Bot bot) =
 {-| type alias Response
 -}
 type alias Response a =
-  { reply : String
-  , bot : Bot
-  , cmd : Cmd a
-  }
+  ({ reply : String, bot : Bot }, Cmd a)
 
 
 {-| type alias With
@@ -199,7 +196,4 @@ parse msg name str =
       Nothing ->
         Cmd.none
   in
-    { reply = reply
-    , bot = bot name
-    , cmd = cmd
-    }
+    { reply = reply, bot = bot name } ! [cmd]

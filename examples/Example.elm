@@ -58,7 +58,7 @@ update msg model =
   case msg of
     Listen ( Err _ ) ->
       model ! [ Cmd.none ]
-    Listen ( Ok { reply, bot, cmd } ) ->
+    Listen ( Ok ({ reply, bot }, cmd) ) ->
       -- Update bot
       { model | history = (Remote, reply) :: model.history, bot = bot } ! [ cmd ]
     Input input ->
