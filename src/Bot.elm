@@ -50,6 +50,8 @@ import Regex exposing (..)
 import Task
 import Time
 
+import Rivescript.Extensions.Directions
+
 
 {-| A record of type `Bot` encapsulsates the internal state of a bot. Use [`bot : String -> Bot`](#bot) to create a new bot.
 -}
