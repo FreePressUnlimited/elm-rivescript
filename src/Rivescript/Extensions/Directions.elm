@@ -1,64 +1,63 @@
-module Rivescript.Extensions.Directions exposing (pipeline)
+module Rivescript.Extensions.Directions exposing (delay)
+
+import Process
+import Task exposing (Task)
+import Time
 
 
 import Parser exposing
-  ( Parser, (|.), (|=)
-  , ignore, ignoreUntil, andThen, succeed, end
-  , keyword, symbol, int, source
-  , oneOf, oneOrMore )
+  ( Parser, run
+  , (|.), (|=), succeed
+  , ignore, oneOrMore
+  , keyword, symbol, float, end
+  , source, ignoreUntil
+  )
 
 
-import Rivescript.Types exposing ( Direction(..) )
+import Parser.LanguageKit exposing
+  ( LineComment(..), MultiComment(..)
+  , whitespace
+  )
 
 
-type alias Result =
-  { message : String
-  , direction : Direction
+import Rivescript.Types exposing (Processor)
+
+
+type alias Delay =
+  { now : String
+  , wait : Float
+  , later : String
   }
 
 
-pipeline : Parser Result
-pipeline =
-  succeed Result
-    |= oneOf
-      [ (source <| ignoreUntil "<") andThen send
-      , (source <| ignoreUntil "<") andThen delay
-      -- , (ignore 1) andThen noreply
-      ]
-    -- |= (source <| ignoreUntil "<")
-    -- |= oneOf [ send, delay, noreply ]
-
-
-send : Parser Direction
-send =
-  succeed Send
-    |. keyword "send"
-    |. symbol ">"
-    |= (source <| ignore oneOrMore (\_ -> True))
-    |. end
-
-
-delay : Parser Direction
-delay =
+delayParser : Parser Delay
+delayParser =
   succeed Delay
+    |= (source <| ignoreUntil "<")
     |. keyword "delay"
     |. whitespace
+      { allowTabs = True
+      , lineComment = NoLineComment
+      , multiComment = NoMultiComment
+      }
     |. keyword "seconds"
     |. symbol "="
-    |= int
+    |= float
     |. symbol ">"
     |= (source <| ignore oneOrMore (\_ -> True))
     |. end
 
 
-noreply : Parser Direction
-noreply =
-  succeed Noreply
-    |. keyword "noreply"
-    |. symbol ">"
-    |. end
+delayTask : Float -> String -> Task Never String
+delayTask wait payload =
+  Process.sleep (wait * Time.second)
+    |> Task.andThen (\_ -> Task.succeed payload)
 
 
-whitespace : Parser ()
-whitespace =
-  ignore oneOrMore (\c -> c == ' ')
+delay : Processor
+delay string =
+    case run delayParser string of
+      Ok {now, wait, later} ->
+        Just (now, delayTask wait later)
+      Err _ ->
+        Nothing

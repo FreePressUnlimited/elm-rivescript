@@ -1,15 +1,8 @@
-module Rivescript.Types exposing
-  ( Direction(..), Message
-  )
+module Rivescript.Types exposing (..)
 
 
-type Direction
-  = Send String
-  | Delay Int String
-  | Noreply
+import Task exposing (Task)
 
 
-type alias Message =
-  { message : String
-  , direction : Maybe Direction
-  }
+type alias Processor =
+  String -> Maybe (String, Task Never String)
