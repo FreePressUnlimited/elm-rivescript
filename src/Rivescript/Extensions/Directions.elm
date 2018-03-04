@@ -1,36 +1,40 @@
-module Rivescript.Extensions.Directions exposing
-  ( Direction(..)
-  , parse
-  )
+module Rivescript.Extensions.Directions exposing (pipeline)
 
 
 import Parser exposing
-  ( Parser, run, (|.), (|=)
-  , ignore, succeed, end
-  , keyword, symbol, int
+  ( Parser, (|.), (|=)
+  , ignore, ignoreUntil, andThen, succeed, end
+  , keyword, symbol, int, source
   , oneOf, oneOrMore )
 
 
-type Direction
-  = Send
-  | Delay Int
-  | Noreply
+import Rivescript.Types exposing ( Direction(..) )
 
 
-parse : String -> Maybe Direction
-parse str =
-  case run (oneOf [send, delay, noreply]) str of
-    Ok dir ->
-      Just dir
-    Err _ ->
-      Nothing
+type alias Result =
+  { message : String
+  , direction : Direction
+  }
 
+
+pipeline : Parser Result
+pipeline =
+  succeed Result
+    |= oneOf
+      [ (source <| ignoreUntil "<") andThen send
+      , (source <| ignoreUntil "<") andThen delay
+      -- , (ignore 1) andThen noreply
+      ]
+    -- |= (source <| ignoreUntil "<")
+    -- |= oneOf [ send, delay, noreply ]
 
 
 send : Parser Direction
 send =
   succeed Send
     |. keyword "send"
+    |. symbol ">"
+    |= (source <| ignore oneOrMore (\_ -> True))
     |. end
 
 
@@ -42,6 +46,8 @@ delay =
     |. keyword "seconds"
     |. symbol "="
     |= int
+    |. symbol ">"
+    |= (source <| ignore oneOrMore (\_ -> True))
     |. end
 
 
@@ -49,6 +55,7 @@ noreply : Parser Direction
 noreply =
   succeed Noreply
     |. keyword "noreply"
+    |. symbol ">"
     |. end
 
 

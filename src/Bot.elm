@@ -50,7 +50,7 @@ import Regex exposing (..)
 import Task
 import Time
 
-import Rivescript.Extensions.Directions
+import Rivescript
 
 
 {-| A record of type `Bot` encapsulsates the internal state of a bot. Use [`bot : String -> Bot`](#bot) to create a new bot.
@@ -165,6 +165,9 @@ type alias With a
 listen
   : ( With ( Maybe String, Maybe String ) )
   ->  ( Result String (Response a) -> a )
+  -- listen should optionally take a list of Parsers: -> List Parser (String, Task Error String)
+  -- parse should be rewritten in these terms (i.e. not accept an msg) : String -> (String, Task Error String)
+  -- listen should map resulting tasks: Task.perform (\_ -> msg <| Ok <| etc...)
   -> Sub a
 listen port_ msg =
   let
