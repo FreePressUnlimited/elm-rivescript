@@ -10,13 +10,15 @@ import Json.Decode as Json
 
 import Bot
 
+import Rivescript
+
 
 {-| PROGRAM
 -}
-port to : List String -> Cmd msg
+port to : Bot.To msg
 
 
-port from : (Array.Array String -> msg) -> Sub msg
+port with : Bot.With msg
 
 
 main : Program Never Model Msg
@@ -31,13 +33,14 @@ main =
       { init = update Submit model
       , view = view
       , update = update
-      , subscriptions = (\model -> Bot.listen from Listen )
+      , subscriptions = (\model -> Bot.listen with Listen Rivescript.extensions )
       }
 
 
 -- MODEL
 
 type From = User | Remote
+
 
 type alias Model =
   { history : List (From, String)
@@ -47,7 +50,7 @@ type alias Model =
 
 
 type Msg
-  = Listen ( Result String ( String, Bot.Bot ) )
+  = Listen ( Result String (Bot.Response Msg) )
   | Input String
   | Submit
   | Enter Int
@@ -56,16 +59,20 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
+    Listen ( Ok ({ reply, bot }, cmd) ) ->
+      -- Update bot
+      case reply of
+        Just string ->
+          { model | history = (Remote, string) :: model.history, bot = bot } ! [ cmd ]
+        Nothing ->
+          model ! [ cmd ]
     Listen ( Err _ ) ->
       model ! [ Cmd.none ]
-    Listen ( Ok ( reply, bot ) ) ->
-      -- Update bot
-      { model | history = (Remote, reply) :: model.history, bot = bot } ! [ Cmd.none ]
     Input input ->
       { model | draft = input } ! [ Cmd.none ]
     Submit ->
       let
-        ( bot, cmd ) = Bot.reply to model.draft model.bot
+        (bot, cmd) = Bot.reply model.draft to model.bot
       in
         { model | history = (User, model.draft) :: model.history, draft = "", bot = bot } ! [ cmd ]
     Enter key ->

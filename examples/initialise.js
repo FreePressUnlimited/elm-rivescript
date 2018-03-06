@@ -21,7 +21,7 @@ bot.loadFile([
     console.log("We're asking the bot brain: (" + data[0] + ") " + data[1]);
     var reply = bot.reply(data[0], data[1]);
     console.log("  and the bot brain replied (" + data[0] + ") " + reply);
-    app.ports.from.send([data[0], reply]);
+    app.ports.with.send([data[0], reply]);
   });
 
 }, function (error) {
