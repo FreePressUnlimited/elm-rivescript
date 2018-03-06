@@ -33,13 +33,14 @@ main =
       { init = update Submit model
       , view = view
       , update = update
-      , subscriptions = (\model -> Bot.listen with Listen Rivescript.directions )
+      , subscriptions = (\model -> Bot.listen with Listen Rivescript.extensions )
       }
 
 
 -- MODEL
 
 type From = User | Remote
+
 
 type alias Model =
   { history : List (From, String)

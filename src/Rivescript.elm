@@ -3,6 +3,7 @@ module Rivescript exposing (..)
 
 import Rivescript.Types
 import Rivescript.Extensions.Directions as Directions
+import Rivescript.Extensions.Errors as Errors
 
 
 import Task exposing (Task)
@@ -21,9 +22,19 @@ apply pipeline string =
     [] ->
       (Just string, Nothing)
     proc :: rest ->
-      Maybe.withDefault (apply rest string) (proc string)
+      Result.withDefault (apply rest string) (proc string)
 
 
 directions : List Processor
 directions =
   [ Directions.delay, Directions.noreply, Directions.send ]
+
+
+errors : List Processor
+errors =
+  [ Errors.deeprecursion, Errors.noreply ]
+
+
+extensions : List Processor
+extensions =
+  List.foldl List.append [] [ directions, errors ]

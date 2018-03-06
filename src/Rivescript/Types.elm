@@ -3,6 +3,8 @@ module Rivescript.Types exposing (..)
 
 import Task exposing (Task)
 
+import Parser exposing (Error)
+
 
 type alias Processor =
-  String -> Maybe ( Maybe String, Maybe (Task Never String) )
+  String -> Result Error ( Maybe String, Maybe (Task Never String) )

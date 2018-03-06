@@ -15,12 +15,6 @@ import Parser exposing
   )
 
 
-import Parser.LanguageKit exposing
-  ( LineComment(..), MultiComment(..)
-  , whitespace
-  )
-
-
 import Rivescript.Types exposing (Processor)
 
 
@@ -72,9 +66,9 @@ delay : Processor
 delay data =
     case run delayParser data of
       Ok {string, delay_, deferred} ->
-        Just (Just string, Just (delayTask delay_ deferred))
-      Err _ ->
-        Nothing
+        Ok (Just string, Just (delayTask delay_ deferred))
+      Err error ->
+        Err error
 
 
 noreplyParser : Parser ()
@@ -89,9 +83,9 @@ noreply : Processor
 noreply data =
   case run noreplyParser data of
     Ok () ->
-      Just (Nothing, Nothing)
-    Err _ ->
-      Nothing
+      Ok (Nothing, Nothing)
+    Err error ->
+      Err error
 
 
 sendParser : Parser Send
@@ -113,6 +107,6 @@ send : Processor
 send data =
   case run sendParser data of
     Ok {string, deferred} ->
-      Just (Just string, Just (sendTask deferred))
-    Err _ ->
-      Nothing
+      Ok (Just string, Just (sendTask deferred))
+    Err error ->
+      Err error
