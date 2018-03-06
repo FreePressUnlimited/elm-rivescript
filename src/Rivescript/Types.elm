@@ -5,4 +5,4 @@ import Task exposing (Task)
 
 
 type alias Processor =
-  String -> Maybe (String, Task Never String)
+  String -> Maybe ( String, Maybe (Task Never String) )

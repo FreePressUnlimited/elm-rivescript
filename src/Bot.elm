@@ -47,10 +47,10 @@ Query bots for replies.
 import Array exposing (Array)
 import Process
 import Regex exposing (..)
-import Task
+import Task exposing (Task)
 import Time
 
-import Rivescript
+import Rivescript exposing (Processor, apply)
 
 
 {-| A record of type `Bot` encapsulsates the internal state of a bot. Use [`bot : String -> Bot`](#bot) to create a new bot.
@@ -165,39 +165,44 @@ type alias With a
 listen
   : ( With ( Maybe String, Maybe String ) )
   ->  ( Result String (Response a) -> a )
-  -- listen should optionally take a list of Parsers: -> List Parser (String, Task Error String)
-  -- parse should be rewritten in these terms (i.e. not accept an msg) : String -> (String, Task Error String)
-  -- listen should map resulting tasks: Task.perform (\_ -> msg <| Ok <| etc...)
+  -> List Processor
   -> Sub a
-listen port_ msg =
+listen port_ msg pipeline =
   let
-    parser =
+    unpack =
       (\(name, reply) ->
-        case (Maybe.map2 (parse msg) name reply) of
+        case (Maybe.map2 (process msg pipeline) name reply) of
           Nothing ->
             msg <| Err "Bad javascript input (bot name or reply)"
           Just response ->
             msg <| Ok response
       )
   in
-    Sub.map parser <| port_ (\data -> (Array.get 0 data, Array.get 1 data) )
+    Sub.map unpack <| port_ (\data -> (Array.get 0 data, Array.get 1 data) )
 
 
 -- Split incoming message based on directions (see Dexter docs at http://docs.rundexter.com/writing/bot/directions/); spawn lightweight processes and batch subscriptions as appropriate. I want to support the <send>, <delay> and <noreply> directions. The <get>, <set> and <star> directions seem to be supported by RiveScript out of the box.
-parse
+process
   : ( Result String (Response a) -> a )
+  -> List Processor
   -> String
   -> String
   -> Response a
-parse msg name str =
+process msg pipeline name string =
   let
-    list = Regex.split (AtMost 1) (regex "<delay>") str
-    -- Is this the correct default or should I fail if "" == reply?
-    reply = Maybe.withDefault "" (List.head list)
-    cmd = case (List.drop 1 list |> List.head) of
-      Just delayed ->
-        Process.sleep (2 * Time.second)
-          |> Task.perform (\_ -> msg <| Ok <| parse msg name delayed)
+    -- list = Regex.split (AtMost 1) (regex "<delay>") str
+    -- -- Is this the correct default or should I fail if "" == reply?
+    -- reply = Maybe.withDefault "" (List.head list)
+    -- cmd = case (List.drop 1 list |> List.head) of
+    --   Just delayed ->
+    --     Process.sleep (2 * Time.second)
+    --       |> Task.perform (\_ -> msg <| Ok <| process msg pipeline name delayed)
+    --   Nothing ->
+    --     Cmd.none
+    (reply, t) = apply pipeline string
+    cmd = case t of
+      Just task ->
+        Task.perform (\val -> msg <| Ok <| process msg pipeline name val) task
       Nothing ->
         Cmd.none
   in

@@ -10,6 +10,8 @@ import Json.Decode as Json
 
 import Bot
 
+import Rivescript
+
 
 {-| PROGRAM
 -}
@@ -31,7 +33,7 @@ main =
       { init = update Submit model
       , view = view
       , update = update
-      , subscriptions = (\model -> Bot.listen with Listen )
+      , subscriptions = (\model -> Bot.listen with Listen Rivescript.directions )
       }
 
 
