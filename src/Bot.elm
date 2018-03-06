@@ -167,21 +167,29 @@ listen
   ->  ( Result String (Response a) -> a )
   -> List Processor
   -> Sub a
-listen port_ msg pipeline =
+listen with msg pipeline =
   let
-    unpack =
-      (\(name, reply) ->
-        case (Maybe.map2 (process msg pipeline) name reply) of
-          Nothing ->
-            msg <| Err "Bad javascript input (bot name or reply)"
-          Just response ->
-            msg <| Ok response
-      )
+    wrap = (\val -> msg (Result.map (uncurry (process msg pipeline)) val))
   in
-    Sub.map unpack <| port_ (\data -> (Array.get 0 data, Array.get 1 data) )
+    with (\data -> (Array.get 0 data, Array.get 1 data) )
+      |> Sub.map (\val -> wrap (unpack val))
 
 
--- Split incoming message based on directions (see Dexter docs at http://docs.rundexter.com/writing/bot/directions/); spawn lightweight processes and batch subscriptions as appropriate. I want to support the <send>, <delay> and <noreply> directions. The <get>, <set> and <star> directions seem to be supported by RiveScript out of the box.
+unpack
+  : (Maybe String, Maybe String)
+  -> Result String (String, String)
+unpack data =
+  case data of
+    (Just name, Just reply) ->
+      Ok (name, reply)
+    (Just _, Nothing) ->
+      Err "Bad javascript input (bot name)"
+    (Nothing, Just _) ->
+      Err "Bad javascript input (reply)"
+    (Nothing, Nothing) ->
+      Err "Bad javascript input (bot name and reply)"
+
+
 process
   : ( Result String (Response a) -> a )
   -> List Processor
@@ -190,20 +198,10 @@ process
   -> Response a
 process msg pipeline name string =
   let
-    -- list = Regex.split (AtMost 1) (regex "<delay>") str
-    -- -- Is this the correct default or should I fail if "" == reply?
-    -- reply = Maybe.withDefault "" (List.head list)
-    -- cmd = case (List.drop 1 list |> List.head) of
-    --   Just delayed ->
-    --     Process.sleep (2 * Time.second)
-    --       |> Task.perform (\_ -> msg <| Ok <| process msg pipeline name delayed)
-    --   Nothing ->
-    --     Cmd.none
-    (reply, t) = apply pipeline string
-    cmd = case t of
-      Just task ->
-        Task.perform (\val -> msg <| Ok <| process msg pipeline name val) task
-      Nothing ->
-        Cmd.none
+    deferred = (\val -> msg (Ok (process msg pipeline name val)))
   in
-    { reply = reply, bot = bot name } ! [cmd]
+    case apply pipeline string of
+      (reply, Just task) ->
+        { reply = reply, bot = bot name } ! [ Task.perform deferred task ]
+      (reply, Nothing) ->
+        { reply = reply, bot = bot name } ! [ Cmd.none ]
