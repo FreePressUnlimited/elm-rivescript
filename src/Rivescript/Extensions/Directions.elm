@@ -1,4 +1,5 @@
-module Rivescript.Extensions.Directions exposing (delay)
+module Rivescript.Extensions.Directions exposing
+  ( delay, send )
 
 import Process
 import Task exposing (Task)
@@ -30,6 +31,23 @@ type alias Delay =
   }
 
 
+type alias Send =
+  { string : String
+  , deferred : String
+  }
+
+
+head : Parser String
+head =
+  source <| ignore oneOrMore (\c -> '<' /= c)
+
+
+tail : Parser String
+tail =
+  source <| ignore oneOrMore (\_ -> True)
+    |. end
+
+
 delayParser : Parser Delay
 delayParser =
   succeed Delay
@@ -51,20 +69,33 @@ delayTask wait payload =
 
 
 delay : Processor
-delay str =
-    case run delayParser str of
+delay data =
+    case run delayParser data of
       Ok {string, delay_, deferred} ->
         Just (string, Just <| delayTask delay_ deferred)
       Err _ ->
         Nothing
 
 
-head : Parser String
-head =
-  source <| ignore oneOrMore (\c -> '<' /= c)
+sendParser : Parser Send
+sendParser =
+  succeed Send
+    |= head
+    |. symbol "<"
+    |. keyword "send"
+    |. symbol ">"
+    |= tail
 
 
-tail : Parser String
-tail =
-  source <| ignore oneOrMore (\_ -> True)
-    |. end
+sendTask : String -> Task Never String
+sendTask payload =
+  Task.succeed payload
+
+
+send : Processor
+send data =
+  case run sendParser data of
+    Ok {string, deferred} ->
+      Just (string, Just (sendTask deferred))
+    Err _ ->
+      Nothing

@@ -1,4 +1,4 @@
 ! version = 2.0
 
 + hello bot
-- Hello, human<delay seconds=0.5>I like you<delay seconds=0.5>You're sexy!
+- Hello, human<delay seconds=2.0>I like you<send>You're sexy!

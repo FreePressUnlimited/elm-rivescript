@@ -23,4 +23,4 @@ apply pipeline string =
 
 directions : List Processor
 directions =
-  [ Directions.delay ]
+  [ Directions.delay, Directions.send ]
