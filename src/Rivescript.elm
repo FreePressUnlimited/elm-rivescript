@@ -12,15 +12,18 @@ import Task exposing (Task)
 type alias Processor = Rivescript.Types.Processor
 
 
-apply : List Processor -> String -> ( String, Maybe (Task Never String) )
+apply
+  : List Processor
+  -> String
+  -> ( Maybe String, Maybe (Task Never String) )
 apply pipeline string =
   case pipeline of
     [] ->
-      (string, Nothing)
+      (Just string, Nothing)
     proc :: rest ->
       Maybe.withDefault (apply rest string) (proc string)
 
 
 directions : List Processor
 directions =
-  [ Directions.delay, Directions.send ]
+  [ Directions.delay, Directions.noreply, Directions.send ]

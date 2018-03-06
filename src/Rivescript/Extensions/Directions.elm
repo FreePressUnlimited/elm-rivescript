@@ -1,5 +1,5 @@
 module Rivescript.Extensions.Directions exposing
-  ( delay, send )
+  ( delay, noreply, send )
 
 import Process
 import Task exposing (Task)
@@ -72,9 +72,26 @@ delay : Processor
 delay data =
     case run delayParser data of
       Ok {string, delay_, deferred} ->
-        Just (string, Just <| delayTask delay_ deferred)
+        Just (Just string, Just (delayTask delay_ deferred))
       Err _ ->
         Nothing
+
+
+noreplyParser : Parser ()
+noreplyParser =
+  succeed ()
+    |. symbol "<"
+    |. keyword "noreply"
+    |. symbol ">"
+
+
+noreply : Processor
+noreply data =
+  case run noreplyParser data of
+    Ok () ->
+      Just (Nothing, Nothing)
+    Err _ ->
+      Nothing
 
 
 sendParser : Parser Send
@@ -96,6 +113,6 @@ send : Processor
 send data =
   case run sendParser data of
     Ok {string, deferred} ->
-      Just (string, Just (sendTask deferred))
+      Just (Just string, Just (sendTask deferred))
     Err _ ->
       Nothing

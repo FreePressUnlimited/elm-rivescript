@@ -140,7 +140,7 @@ reply str port_ (Bot bot) =
 {-| type alias Response
 -}
 type alias Response a =
-  ({ reply : String, bot : Bot }, Cmd a)
+  ({ reply : Maybe String, bot : Bot }, Cmd a)
 
 
 {-| type alias With
@@ -201,7 +201,11 @@ process msg pipeline name string =
     deferred = (\val -> msg (Ok (process msg pipeline name val)))
   in
     case apply pipeline string of
-      (reply, Just task) ->
-        { reply = reply, bot = bot name } ! [ Task.perform deferred task ]
-      (reply, Nothing) ->
-        { reply = reply, bot = bot name } ! [ Cmd.none ]
+      (Just reply, Just task) ->
+        { reply = (Just reply), bot = bot name } ! [ Task.perform deferred task ]
+      (Just reply, Nothing) ->
+        { reply = (Just reply), bot = bot name } ! [ Cmd.none ]
+      (Nothing, Just task) ->
+        { reply = Nothing, bot = bot name } ! [ Task.perform deferred task ]
+      (Nothing, Nothing) ->
+        { reply = Nothing, bot = bot name } ! [ Cmd.none ]

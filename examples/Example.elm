@@ -58,11 +58,15 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
-    Listen ( Err _ ) ->
-      model ! [ Cmd.none ]
     Listen ( Ok ({ reply, bot }, cmd) ) ->
       -- Update bot
-      { model | history = (Remote, reply) :: model.history, bot = bot } ! [ cmd ]
+      case reply of
+        Just string ->
+          { model | history = (Remote, string) :: model.history, bot = bot } ! [ cmd ]
+        Nothing ->
+          model ! [ cmd ]
+    Listen ( Err _ ) ->
+      model ! [ Cmd.none ]
     Input input ->
       { model | draft = input } ! [ Cmd.none ]
     Submit ->
