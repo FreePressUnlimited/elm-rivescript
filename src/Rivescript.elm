@@ -1,4 +1,30 @@
-module Rivescript exposing (..)
+module Rivescript exposing
+  ( Processor, Pipeline
+  , apply
+  , directions, errors
+  , extensions
+  )
+
+{-| Rivescript provides functions that implement additional functionality on top of the rivescript-js RiveScript library. These functions are implemented as parser that may be run on Bot responses.
+
+# Types
+
+@docs Processor
+
+@docs Pipeline
+
+# Running pipelines
+
+@docs apply
+
+@docs extensions
+
+# Utilities
+
+@docs directions
+
+@docs errors
+-}
 
 
 import Rivescript.Types
@@ -9,12 +35,22 @@ import Rivescript.Extensions.Errors as Errors
 import Task exposing (Task)
 
 
--- Re-export for import elsewhere
+{-| Processor
+
+  Imported from Rivescript.Types and re-exported here for convenience.
+-}
 type alias Processor = Rivescript.Types.Processor
 
 
+{-| Pipeline
+-}
+type alias Pipeline = List Processor
+
+
+{-| apply
+-}
 apply
-  : List Processor
+  : Pipeline
   -> String
   -> ( Maybe String, Maybe (Task Never String) )
 apply pipeline string =
@@ -25,16 +61,22 @@ apply pipeline string =
       Result.withDefault (apply rest string) (proc string)
 
 
-directions : List Processor
+{-| extensions
+-}
+extensions : Pipeline
+extensions =
+  List.foldl List.append [] [ directions, errors ]
+
+
+{-| directions
+-}
+directions : Pipeline
 directions =
   [ Directions.delay, Directions.noreply, Directions.send ]
 
 
-errors : List Processor
+{-| errors
+-}
+errors : Pipeline
 errors =
   [ Errors.deeprecursion, Errors.noreply ]
-
-
-extensions : List Processor
-extensions =
-  List.foldl List.append [] [ directions, errors ]

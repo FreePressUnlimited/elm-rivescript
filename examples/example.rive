@@ -1,7 +1,7 @@
 ! version = 2.0
 
 + hello|hello *
-- Hello, human<delay seconds=2.0>I like you<send>You're sexy!
+- Hello, human<send>My name is Marvin<delay seconds=3>How do you do?
 
 + * the best
 - Yay!

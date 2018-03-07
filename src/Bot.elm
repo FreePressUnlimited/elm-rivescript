@@ -2,7 +2,8 @@ module Bot exposing
   ( Bot, Farm, bot
   , name
   , Request, To, reply
-  , Response, With, listen)
+  , Response, With, listen
+  )
 
 {-| **An Elm RiveScript library** This library provides an Elm interface for RiveScript built on top of the [rivescript-js](https://github.com/aichaos/rivescript-js) public API.
 
@@ -50,7 +51,7 @@ import Regex exposing (..)
 import Task exposing (Task)
 import Time
 
-import Rivescript exposing (Processor, apply)
+import Rivescript exposing (Pipeline, apply)
 
 
 {-| A record of type `Bot` encapsulsates the internal state of a bot. Use [`bot : String -> Bot`](#bot) to create a new bot.
@@ -165,7 +166,7 @@ type alias With a
 listen
   : ( With ( Maybe String, Maybe String ) )
   ->  ( Result String (Response a) -> a )
-  -> List Processor
+  -> Pipeline
   -> Sub a
 listen with msg pipeline =
   let
@@ -192,7 +193,7 @@ unpack data =
 
 process
   : ( Result String (Response a) -> a )
-  -> List Processor
+  -> Pipeline
   -> String
   -> String
   -> Response a
