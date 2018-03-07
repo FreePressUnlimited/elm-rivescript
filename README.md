@@ -2,6 +2,12 @@
 
 **An Elm RiveScript library** This library provides an Elm interface for RiveScript built on top of the [rivescript-js](https://github.com/aichaos/rivescript-js) public API.
 
+## Internet Freedom release 2.0.0
+
+![Internet Freedom release](iff2018-logo.png)
+
+This release was prepared at the [IFF Internet Freedom Festival](https://internetfreedomfestival.org/) 2018 in Valencia, Spain.
+
 ## Installation instructions
 
 To do
