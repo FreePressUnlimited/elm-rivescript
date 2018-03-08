@@ -2,21 +2,39 @@
 
 **An Elm RiveScript library** This library provides an Elm interface for RiveScript built on top of the [rivescript-js](https://github.com/aichaos/rivescript-js) public API.
 
+## Internet Freedom edition v2.0.0
+
+![Internet Freedom release](iff2018-logo.png)
+
+This release was prepared at the [IFF Internet Freedom Festival](https://internetfreedomfestival.org/) 2018 in Valencia, Spain.
+
 ## Installation instructions
 
-To do
+**Work in progress** Detailed installation instructions will follow.
 
-## Getting started
+- [ ] Wrap [javascript interop](src/elm-rivescript.js) in an ES6 module.
+- [ ] Include [RiveScript-JS](https://www.npmjs.com/package/rivescript) as a dependency.
+- [ ] Package this interop and publish to NPM.
 
-To do
+When these steps are completed, installation should look something like:
 
-## Javascript interop
+1. Install `elm-rivescript` as a dependency of your Elm app.
 
-To do
+    `elm package install elm-rivescript`
+
+2. Install `elm-rivescript` as a dependency of your project.
+
+    `npm install elm-rivescript`
+
+3. Initialise your bot from Javascript.
+
+    *detailed instructions to folllow*
+
+4. Include both your bundled javascript and your Elm app in your HTML source.
 
 ## Documentation
 
-* The main `src/Bot.elm` source file is well documented. See the documentation at [Elm Packages](http://package.elm-lang.org/packages/publeaks/elm-rivescript/latest).
+* This packages source files are well documented. See the documentation at [Elm Packages](http://package.elm-lang.org/packages/publeaks/elm-rivescript/latest).
 * Also see the comments inline to `src/elm-rivescript.js` on [Github](https://github.com/Publeaks/elm-rivescript/blob/master/src/elm-rivescript.js).
 * The repo contains a worked example at `examples/example.html`.
 

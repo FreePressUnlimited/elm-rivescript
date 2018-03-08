@@ -47,11 +47,11 @@ Query bots for replies.
 
 import Array exposing (Array)
 import Process
-import Regex exposing (..)
 import Task exposing (Task)
 import Time
 
-import Rivescript exposing (Pipeline, apply)
+import Rivescript exposing (apply)
+import Rivescript.Types exposing (Pipeline)
 
 
 {-| A record of type `Bot` encapsulsates the internal state of a bot. Use [`bot : String -> Bot`](#bot) to create a new bot.
@@ -103,12 +103,16 @@ pid : Bot -> Maybe Process.Id
 pid (Bot { pid }) = pid
 
 
-{-| type alias Request
+{-|  Type alias `Request` wraps a request for [`reply`](#reply) from your bot. A `Request` captures both a bot (`Bot`) and a command (`Cmd a`).
+
+  If you maintain a bot [`Farm`](#Farm), the bot **must** replace any bot in your bot farm with the same, unique name. The command **must** be passed of the the Elm runtime for its payload to be executed.
 -}
 type alias Request a = (Bot, Cmd a)
 
 
-{-| type alias To
+{-| Type alias `To` is a convenience type for wiring up your bots to the appropriate ports in Elm. To define your port, use:
+
+    port to : To a
 -}
 type alias To a = List String -> Cmd a
 
@@ -117,11 +121,13 @@ type alias To a = List String -> Cmd a
 
   You must update your application state to replace your bot with the bot returned to you. You must also pass the command returned to you to the Elm runtime for your query to be submitted to the RiveScript interpreter.
 
-    reply "Hello, Bot!" to (bot "Marvin") == ( Bot, Cmd msg )
+    reply "Hello, Bot!" to (bot "Marvin") == Request a
 
-  Where `to` is an outgoing port of type:
+  Where `To` is an outgoing port of type:
 
-    port to : List String -> Cmd msg
+    port to : To a
+
+  See also [`Request`](#Request) and [`To`](#To).
 -}
 reply : String -> To a -> Bot -> Request a
 reply str port_ (Bot bot) =
@@ -138,13 +144,17 @@ reply str port_ (Bot bot) =
     Bot { bot | pid = Nothing } ! [ cmd, port_ [ bot.uid, str ] ]
 
 
-{-| type alias Response
+{-| Type alias `Response` wraps a bot response in answer to a request for [`reply`](#reply) from your bot. A `Response` captures [errors](Rivescript#errors) in the underlying bot brain (RiveScript code) in addition to a bot reply (`Maybe String`), bot (`Bot`) and command (`Cmd a`).
+
+  If you maintain a bot [`Farm`](#Farm), the bot **must** replace any bot in your bot farm with the same, unique name. The command **must** be passed of the the Elm runtime for its payload to be executed.
 -}
 type alias Response a =
   ({ reply : Maybe String, bot : Bot }, Cmd a)
 
 
-{-| type alias With
+{-| Type alias `With` is a convenience type for wiring up your bots to the appropriate ports in Elm. To define your port, use:
+
+    port with : With a
 -}
 type alias With a
   -- Using List instead of Array will be more conventional while Array will likely be more performant.
@@ -153,15 +163,17 @@ type alias With a
 
 {-| Subscribe to replies from your bot.
 
-  Returns `Ok ( reply, bot )` when a reply arrives from the RiveScript interpreter. You must update your application state to replace your bot with the bot returned to you.
+  Returns `Ok (Response a)` when a reply arrives from the RiveScript interpreter. You must update your application state to replace your bot with the bot returned to you in the response.
 
-  Returns `Err "Bad javascript input (bot name or reply)"` if the RiveScript interpreter either returns no bot name or returns no reply. If elm-rivescript is wired up correctly on the javascript side this **should** never occur.
+  Returns `Err String` if the RiveScript interpreter either returns no bot name or returns no reply. If elm-rivescript is wired up correctly on the javascript side this **should** never occur.
 
-    listen with (\Result error (reply, bot, cmd) -> msg) == Sub msg
+    listen with (\Result (Response a) -> a) pipeline == Sub a
 
-  Where `with` is an incoming port of type:
+  Where `pipeline` is a processor pipeline of type [`Pipeline`](Rivescript-Types#Pipeline) and where `with` is an incoming port of type:
 
-    port with : (Array.Array String -> msg) -> Sub msg
+    port with : With a
+
+  See also [`Response`](#Response) and [`With`](#With).
 -}
 listen
   : ( With ( Maybe String, Maybe String ) )
