@@ -1,5 +1,5 @@
 {
-    "version": "2.0.0",
+    "version": "2.0.1",
     "summary": "Interface for the rivescript-js RiveScript interpreter",
     "repository": "https://github.com/publeaks/elm-rivescript.git",
     "license": "MIT",
