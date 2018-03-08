@@ -8,6 +8,10 @@
 
 This release was prepared at the [IFF Internet Freedom Festival](https://internetfreedomfestival.org/) 2018 in Valencia, Spain.
 
+* Cleaner, more powerful RiveScript Bot API
+* Support for RiveScript error trapping
+* Support for directions (see [What Are Direcrtions?](http://docs.rundexter.com/writing/bot/directions/))
+
 ## Installation instructions
 
 **Work in progress** Detailed installation instructions will follow.
