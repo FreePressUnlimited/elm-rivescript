@@ -1,5 +1,5 @@
 {
-    "version": "1.0.0",
+    "version": "2.0.0",
     "summary": "Interface for the rivescript-js RiveScript interpreter",
     "repository": "https://github.com/publeaks/elm-rivescript.git",
     "license": "MIT",
@@ -7,11 +7,16 @@
         "src"
     ],
     "exposed-modules": [
-        "Bot"
+        "Bot",
+        "Rivescript",
+        "Rivescript.Types",
+        "Rivescript.Extensions.Directions",
+        "Rivescript.Extensions.Errors"
     ],
     "dependencies": {
         "elm-lang/core": "5.1.1 <= v < 6.0.0",
-        "elm-lang/html": "2.0.0 <= v < 3.0.0"
+        "elm-lang/html": "2.0.0 <= v < 3.0.0",
+        "elm-tools/parser": "2.0.1 <= v < 3.0.0"
     },
     "elm-version": "0.18.0 <= v < 0.19.0"
 }
